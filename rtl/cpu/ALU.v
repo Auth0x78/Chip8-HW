@@ -33,11 +33,7 @@ always @(*) begin
             {A[0], Z} = alu_op[0] ? ({1'b0, Yin} - {1'b0, Xin}) 
                                    : ({1'b0, Xin} - {1'b0, Yin});
         end
-        4'b1000: begin
-            Z = 8'h00;          // BCD placeholder
-            A = 8'h00;
-        end
-        4'b1001: begin 
+        4'b1000: begin 
             {A, Z} = I + {8'b0, Xin}; // Zero-extend Xin to match 16-bit I
         end
         default: begin 
