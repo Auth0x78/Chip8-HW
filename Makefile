@@ -1,38 +1,66 @@
-# Makefile for Icarus Verilog with Header Support
+# ==============================================================================
+# Icarus Verilog & GTKWave Build System
+# ==============================================================================
+# USAGE QUICK REFERENCE:
+#   make              - Run default testbench (testbench/tb.v)
+#   make test_alu     - Run specific testbench (testbench/tb_alu.v or alu.v)
+#   make waves        - Open default waveform in GTKWave (waveforms/default.vcd)
+#   make wave_alu     - Open specific waveform in GTKWave (waveforms/alu.vcd)
+#   make clean        - Remove all build outputs and generated waveforms
+#   make help         - Display help instructions
+# ==============================================================================
 
-# Base output paths
+# Output Directories
 OUTPUT_DIR := build
 VCD_DIR    := waveforms
 
-INC_DIR    := include   # Folder containing .vh / header files
+# Header Include Directory (.vh files)
+INC_DIR    := include
 
-# Find source files
+# Discover Source Files
 RTL_SRCS := $(wildcard rtl/*.v) $(wildcard rtl/**/*.v)
 TB_SRCS  := $(wildcard testbench/*.v)
 HDRS     := $(wildcard $(INC_DIR)/*.vh) $(wildcard rtl/**/*.vh)
 
-DEFAULT_TB := testbench/tb.v
-SIM_OUT    := $(OUTPUT_DIR)/test_sim.vvp
-
-# Global fallback VCD path
+# Default Testbench Configurations
+DEFAULT_TB  := testbench/tb.v
+SIM_OUT     := $(OUTPUT_DIR)/test_sim.vvp
 DEFAULT_VCD := $(VCD_DIR)/default.vcd
 
-IVERILOG   := iverilog
-VVP        := vvp
-GTKWAVE    := gtkwave
+# Toolchain Binaries
+IVERILOG := iverilog
+VVP      := vvp
+GTKWAVE  := gtkwave
 
-# Include flags for Icarus Verilog
-FLAGS      := -g2012 -I$(INC_DIR) -DVCD_DIR=\"$(VCD_DIR)\"
+# Compiler Flags (-g2012 enables IEEE 1800-2012 SystemVerilog features)
+FLAGS    := -g2012 -I$(INC_DIR) -DVCD_DIR=\"$(VCD_DIR)\"
 
-.PHONY: all sim waves wave_% clean
+.PHONY: all help sim waves wave_% clean
 
+# Default target runs simulation
 all: sim
 
-# Directories creation rule
-$(OUTPUT_DIR) $(VCD_DIR):
-	@mkdir $@
+# ------------------------------------------------------------------------------
+# Help Target
+# ------------------------------------------------------------------------------
+help:
+	@echo "Available Targets:"
+	@echo "  make              : Compile & simulate default testbench ($(DEFAULT_TB))"
+	@echo "  make test_<name>  : Compile & simulate testbench/tb_<name>.v or testbench/<name>.v"
+	@echo "  make waves        : Open default waveform ($(DEFAULT_VCD)) in GTKWave"
+	@echo "  make wave_<name>  : Open specific waveform ($(VCD_DIR)/<name>.vcd) in GTKWave"
+	@echo "  make clean        : Delete '$(OUTPUT_DIR)' and '$(VCD_DIR)' directories"
 
-# Default simulation rule
+# ------------------------------------------------------------------------------
+# Output Directory Creation
+# ------------------------------------------------------------------------------
+$(OUTPUT_DIR) $(VCD_DIR):
+	@mkdir -p $@
+
+# ------------------------------------------------------------------------------
+# Default Simulation (make / make sim)
+# Recompiles automatically when any RTL source or header changes.
+# ------------------------------------------------------------------------------
 sim: $(RTL_SRCS) $(DEFAULT_TB) $(HDRS) | $(OUTPUT_DIR) $(VCD_DIR)
 	$(IVERILOG) $(FLAGS) \
 		-DVCD_FILE=\"$(DEFAULT_VCD)\" \
@@ -41,8 +69,10 @@ sim: $(RTL_SRCS) $(DEFAULT_TB) $(HDRS) | $(OUTPUT_DIR) $(VCD_DIR)
 		$(DEFAULT_TB)
 	$(VVP) $(SIM_OUT)
 
-# Pattern Rule for specific testbenches (e.g., make test_alu)
-# Generates $(VCD_DIR)/<name>.vcd
+# ------------------------------------------------------------------------------
+# Dynamic Pattern Rule for Specific Testbenches (e.g., make test_alu)
+# Looks for testbench/tb_<name>.v first; falls back to testbench/<name>.v.
+# ------------------------------------------------------------------------------
 test_%: $(RTL_SRCS) $(HDRS) | $(OUTPUT_DIR) $(VCD_DIR)
 	@TB_FILE=$$( [ -f testbench/tb_$*.v ] && echo "testbench/tb_$*.v" || echo "testbench/$*.v" ); \
 	VCD_PATH="$(VCD_DIR)/$*.vcd"; \
@@ -50,13 +80,19 @@ test_%: $(RTL_SRCS) $(HDRS) | $(OUTPUT_DIR) $(VCD_DIR)
 	$(IVERILOG) $(FLAGS) -DVCD_FILE=\"$$VCD_PATH\" -o $(OUTPUT_DIR)/$*.vvp $(RTL_SRCS) $$TB_FILE && \
 	$(VVP) $(OUTPUT_DIR)/$*.vvp
 
-# Global waveform rule (opens the default waveform)
+# ------------------------------------------------------------------------------
+# Waveform Viewing Rules (GTKWave)
+# ------------------------------------------------------------------------------
+# Open the default waveform: make waves
 waves:
 	$(GTKWAVE) $(DEFAULT_VCD) &
 
-# Specific waveform rule (e.g., make wave_alu opens waveforms/alu.vcd)
+# Open a specific waveform: make wave_alu (opens waveforms/alu.vcd)
 wave_%:
 	$(GTKWAVE) $(VCD_DIR)/$*.vcd &
 
+# ------------------------------------------------------------------------------
+# Cleanup Target
+# ------------------------------------------------------------------------------
 clean:
 	rm -rf $(OUTPUT_DIR) $(VCD_DIR)
