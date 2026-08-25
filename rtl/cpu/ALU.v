@@ -1,12 +1,14 @@
-module ALU (
-    input wire [3:0] alu_op,
-    input wire [7:0] Xin,
-    input wire [7:0] Yin,
-    input wire [15:0] I,
+module alu (
+    input wire [3:0]    alu_op,
+    input wire [7:0]    Xin,
+    input wire [7:0]    Yin,
+    input wire [15:0]   Rin,
 
-    output reg [7:0] Z,
-    output reg [7:0] A
+    output reg [7:0]    Z,
+    output reg [7:0]    A
 );
+
+`include "alu_params.vh"
 
 always @(*) begin
     // Default assignments to prevent unintended latches
@@ -14,27 +16,30 @@ always @(*) begin
     Z = 8'h00;
 
     case (alu_op)
-        4'b0000: begin 
+        ALU_SHIFT_RIGHT: begin 
             A[0] = Xin[0];     // VF = shifted out LSB (CHIP-8 SHR)
             Z = Xin >> 1; 
         end
-        4'b0001: begin
+        ALU_SHIFT_LEFT: begin
             A[0] = Xin[7];     // VF = shifted out MSB (CHIP-8 SHL)
             Z = Xin << 1; 
         end
-        4'b0010: Z = Xin | Yin; // OR
-        4'b0011: Z = Xin & Yin; // AND
-        4'b0100: Z = Xin ^ Yin; // XOR
-        4'b0101: begin
-            {A[0], Z} = {1'b0, Xin} + {1'b0, Yin}; // Add with carry bit in A[0]
+        ALU_OR: Z = Xin | Yin; // OR
+        ALU_AND: Z = Xin & Yin; // AND
+        ALU_XOR: Z = Xin ^ Yin; // XOR
+        ALU_ADD_XY: begin
+            {A[0], Z} = Xin + Yin; // Add with carry bit in A[0]
         end
-        4'b0110, 4'b0111: begin
-            // Subtract with borrow (SUB / SUBN)
-            {A[0], Z} = alu_op[0] ? ({1'b0, Yin} - {1'b0, Xin}) 
-                                   : ({1'b0, Xin} - {1'b0, Yin});
+        ALU_SUB_XY: begin
+            Z = Xin - Yin;
+            A[0] = (Xin >= Yin) ? 1'b1 : 1'b0; // VF = 1 if no borrow (x >= y)
         end
-        4'b1000: begin 
-            {A, Z} = I + {8'b0, Xin}; // Zero-extend Xin to match 16-bit I
+        ALU_SUB_YX: begin
+            Z = Yin - Xin;
+            A[0] = (Yin >= Xin) ? 1'b1 : 1'b0; // VF = 1 if no borrow (y >= x)
+        end
+        ALU_ADD_RX: begin 
+            {A, Z} = Rin + {8'b0, Xin}; // Zero-extend Xin to match 16-bit I
         end
         default: begin 
             Z = 8'h00;
