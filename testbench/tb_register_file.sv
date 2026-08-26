@@ -59,15 +59,16 @@ module tb_register_file;
     input [3:0] vx_index;
     input [7:0] data;
     begin
+      @(posedge clk);  // Write occurs on this edge
       write_en      = 1;
       vx_sel        = vx_index;
       data_low      = data;
       write_dst_sel = RF_WRITE_V;
 
       // Write occurs on this edge
-      @(posedge clk);  // Write occurs on this edge
       @(negedge clk);  // Deassert halfway through the cycle
       write_en = 0;
+      vx_sel   = 4'h0;
       data_low = 8'h0;
     end
   endtask
@@ -77,12 +78,12 @@ module tb_register_file;
     input [7:0] data_h;
     input [7:0] data_l;
     begin
+      @(posedge clk);
       write_en = 1;
       data_low = data_l;
       data_high = data_h;
       write_dst_sel = RF_WRITE_I;
 
-      @(posedge clk);
 
       @(negedge clk);
       write_en  = 0;
@@ -96,11 +97,10 @@ module tb_register_file;
     input st_sel;
     input [7:0] data;
     begin
+      @(posedge clk);
       write_en = 1;
       data_low = data;
       write_dst_sel = st_sel ? RF_WRITE_ST : RF_WRITE_DT;
-
-      @(posedge clk);
 
       @(negedge clk);
       write_en = 0;
@@ -120,8 +120,8 @@ module tb_register_file;
     // Output for task
     reg    [7:0] expected_low;
     reg    [7:0] expected_high;
-    reg    [4:0] reg_index_x;
-    reg    [4:0] reg_index_y;
+    reg    [3:0] reg_index_x;
+    reg    [3:0] reg_index_y;
     reg          st_sel;
     logic  [7:0] out;
     string       reg_name;
@@ -157,18 +157,17 @@ module tb_register_file;
       reg_index_x  = $urandom_range(0, 15);
 
       write_v_register(reg_index_x, expected_low);
-      #1;
-      vx_sel = reg_index_x;  // Let continuous assigns settle
 
-      if (Vx_out === expected_low) begin
+      vx_sel = reg_index_x;
+      // Let read outputs settle
+      #1;
+      if (Vx_out == expected_low) begin
         pass_count = pass_count + 1;
       end else begin
         fail_count = fail_count + 1;
         $display("[FAIL] Iteration %0d: Write to V[%0d] | Expected = %0d Got = %0d", i,
                  reg_index_x, expected_low, Vx_out);
       end
-
-      vx_sel = 4'h0;
     end
 
     // Write to Timer Register Test
@@ -205,6 +204,23 @@ module tb_register_file;
         fail_count = fail_count + 1;
         $display("[FAIL] Iteration %0d: Write to Index | Expected = %0d Got = %0d", i, {
                  expected_high, expected_low}, I);
+      end
+    end
+
+    // Double same register read test
+    for (i = 0; i < write_test_cnt; i = i + 1) begin
+      reg_index_x = $urandom_range(0, 15);
+
+      vx_sel = reg_index_x;
+      vy_sel = reg_index_x;
+      #1;  // Let output settle
+
+      if (Vx_out == Vy_out) begin
+        pass_count = pass_count + 1;
+      end else begin
+        fail_count = fail_count + 1;
+        $display("[FAIL] Iteration %0d: Write to V[%0d] | Expected = %0d Got = %0d", i,
+                 reg_index_x, Vx_out, Vy_out);
       end
     end
 
