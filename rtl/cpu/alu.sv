@@ -1,16 +1,18 @@
+`timescale 1ns / 1ps
+
 module alu (
     input wire [ 3:0] alu_op,
     input wire [ 7:0] Xin,
     input wire [ 7:0] Yin,
     input wire [15:0] Rin,
 
-    output reg [7:0] Z,
-    output reg [7:0] A
+    output logic [7:0] Z,
+    output logic [7:0] A
 );
 
   `include "alu_params.vh"
 
-  always @(*) begin
+  always_comb begin
     // Default assignments to prevent unintended latches
     A = 8'h00;
     Z = 8'h00;

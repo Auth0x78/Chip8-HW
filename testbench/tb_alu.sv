@@ -105,7 +105,7 @@ module tb_alu;
   // Main Test Stimulus
   initial begin
     // Setup GTKWave VCD dump files
-    $dumpfile({`VCD_DIR, "/tb_alu.vcd"});
+    $dumpfile({`VCD_DIR, "/alu.vcd"});
     $dumpvars(0, tb_alu);
 
     // Initialize inputs
@@ -144,11 +144,11 @@ module tb_alu;
     // 2. Randomized Test Stream
     $display("--- Running 1000 Random Vector Iterations ---");
     for (i = 0; i < 1000; i = i + 1) begin
-      Xin = $urandom_range(0, 255);
-      Yin = $urandom_range(0, 255);
-      Rin = $urandom();
+      Xin = $urandom_range(0, 255)[7:0];
+      Yin = $urandom_range(0, 255)[7:0];
+      Rin = $urandom()[15:0];
 
-      select_opcode($urandom_range(0, 8));
+      select_opcode($urandom_range(0, 8)[3:0]);
 
       #5;  // Wait for combinational settling
 
