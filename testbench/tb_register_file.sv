@@ -11,7 +11,7 @@ module tb_register_file;
   // Register read and write select
   reg [3:0] vx_sel;
   reg [3:0] vy_sel;
-  reg [2:0] write_dst_sel;
+  reg [1:0] write_dst_sel;
 
   reg [7:0] data_low;
   reg [7:0] data_high;
@@ -52,35 +52,37 @@ module tb_register_file;
   );
 
   // Write to V register
-  task write_v_register;
+  // NOTE: Signals are driven BEFORE the posedge so the DUT samples them
+  // correctly on the rising edge. vx_sel is NOT cleared here - the caller
+  // keeps driving it to read back the written value.
+  task static write_v_register;
     input [3:0] vx_index;
     input [7:0] data;
     begin
-      @(posedge clk);
-      write_en = 1;
-      vx_sel = vx_index;
-      data_low = data;
-
+      write_en      = 1;
+      vx_sel        = vx_index;
+      data_low      = data;
       write_dst_sel = RF_WRITE_V;
 
-      @(negedge clk);
+      // Write occurs on this edge
+      @(posedge clk);  // Write occurs on this edge
+      @(negedge clk);  // Deassert halfway through the cycle
       write_en = 0;
-      vx_sel   = 4'h0;
       data_low = 8'h0;
     end
   endtask
 
   // Write to Index register
-  task write_index_register;
+  task static write_index_register;
     input [7:0] data_h;
     input [7:0] data_l;
     begin
-      @(posedge clk);
       write_en = 1;
       data_low = data_l;
       data_high = data_h;
-
       write_dst_sel = RF_WRITE_I;
+
+      @(posedge clk);
 
       @(negedge clk);
       write_en  = 0;
@@ -90,14 +92,15 @@ module tb_register_file;
   endtask
 
   // Write to Timer register
-  task write_timer_register;
+  task static write_timer_register;
     input st_sel;
     input [7:0] data;
     begin
-      @(posedge clk);
       write_en = 1;
       data_low = data;
       write_dst_sel = st_sel ? RF_WRITE_ST : RF_WRITE_DT;
+
+      @(posedge clk);
 
       @(negedge clk);
       write_en = 0;
@@ -154,7 +157,8 @@ module tb_register_file;
       reg_index_x  = $urandom_range(0, 15);
 
       write_v_register(reg_index_x, expected_low);
-      vx_sel = reg_index_x;
+      #1;
+      vx_sel = reg_index_x;  // Let continuous assigns settle
 
       if (Vx_out === expected_low) begin
         pass_count = pass_count + 1;

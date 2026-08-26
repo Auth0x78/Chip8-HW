@@ -1,11 +1,13 @@
+`timescale 1ns / 1ps
+
 module lfsr_8bit (
-    input wire clk,
-    input wire rst_n,
-    output reg [7:0] rand_out
+    input  logic       clk,
+    input  logic       rst_n,
+    output logic [7:0] rand_out
 );
 
   // Uses the standard maximal length polynomial taps for 8 bits: x^8 + x^6 + x^5 + x^4 + 1
-  always @(posedge clk or negedge rst_n) begin
+  always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       rand_out <= 8'hFF;  // Seed value must NOT be zero
     end else begin

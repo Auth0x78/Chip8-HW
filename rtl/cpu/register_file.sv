@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module register_file (
     input wire clk,
     input wire rst,
@@ -6,7 +8,7 @@ module register_file (
     input wire       write_en,
     input wire [3:0] vx_sel,        // Vx index
     input wire [3:0] vy_sel,        // Vy index
-    input wire [2:0] write_dst_sel,
+    input wire [1:0] write_dst_sel,
 
     // Input data to write to registers
     input wire [7:0] in_data_low,
@@ -24,11 +26,11 @@ module register_file (
 
   `include "register_file_params.vh"
 
-  reg [7:0] V[0:15];
+  reg [7:0] V[16];
 
   // Read Logic (Asynchronous)
-  assign Vx = write_en ? 8'bz : V[vx_sel];
-  assign Vy = write_en ? 8'bz : V[vy_sel];
+  assign Vx = write_en ? 8'hZZ : V[vx_sel];
+  assign Vy = write_en ? 8'hZZ : V[vy_sel];
 
   // Write Logic (Synchronous)
   always_ff @(posedge clk or posedge rst) begin
