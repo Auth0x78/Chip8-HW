@@ -62,14 +62,11 @@ GTKWAVE   := gtkwave
 # -Wno-VARHIDDEN: Suppress variable hidden warnings (expected with `include pattern)
 # -Wno-UNUSEDSIGNAL: Suppress unused signal warnings (testbench only uses A[0])
 # --top-module: Specify top module name
-VERILATOR_FLAGS := --cc --binary --trace --timing -Wall -Wno-UNUSED -Wno-WIDTH \
+VERILATOR_FLAGS := --cc -O3 --binary --trace --timing -Wall -Wno-UNUSED -Wno-WIDTH \
                    -Wno-VARHIDDEN -Wno-UNUSEDSIGNAL \
                    -I$(INC_DIR) \
                    -DVCD_DIR=\"$(VCD_DIR)\" \
                    --top-module
-
-# C++ Compiler Flags for Verilated code
-CXXFLAGS := -O3 -std=c++17
 
 .PHONY: all help sim waves wave_% clean
 
@@ -110,7 +107,7 @@ sim: $(RTL_SRCS) $(DEFAULT_TB) $(HDRS) | $(OUTPUT_DIR) $(VCD_DIR) $(OBJ_DIR)
 # Dynamic Pattern Rule for Specific Testbenches (e.g., make test_alu)
 # Looks for testbench/tb_<name>.sv
 # ------------------------------------------------------------------------------
-test_%: $(RTL_SRCS) $(HDRS) | $(OUTPUT_DIR) $(VCD_DIR) $(OBJ_DIR)
+test-%: $(RTL_SRCS) $(HDRS) | $(OUTPUT_DIR) $(VCD_DIR) $(OBJ_DIR)
 	@TB_FILE=$$( [ -f testbench/tb_$*.sv ] && echo "testbench/tb_$*.sv" || echo "testbench/$*.sv" ); \
 	if [ ! -f "$$TB_FILE" ]; then \
 		echo "Error: Testbench not found: $$TB_FILE"; \
@@ -133,7 +130,7 @@ waves:
 	$(GTKWAVE) $(DEFAULT_VCD) &
 
 # Open a specific waveform: make wave_alu (opens waveforms/alu.vcd)
-wave_%:
+wave-%:
 	$(GTKWAVE) $(VCD_DIR)/$*.vcd &
 
 # ------------------------------------------------------------------------------
