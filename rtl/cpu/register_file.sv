@@ -30,14 +30,14 @@ module register_file (
     assign Vy = V[vy_sel];
 
     // Write Logic (Synchronous)
-    always @(posedge clk or posedge rst) begin
+    always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             integer i;
             // Reset all 16 - General Purpose Registers to 0
             for (i = 0; i < 16; i = i + 1) begin
                 V[i] <= 8'h00;
             end
-
+            
             // Reset all special registers
             I_reg <= 16'h0000;
             DT_reg <= 8'h00;

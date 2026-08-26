@@ -18,12 +18,12 @@ VCD_DIR    := waveforms
 INC_DIR    := include
 
 # Discover Source Files
-RTL_SRCS := $(wildcard rtl/*.v) $(wildcard rtl/**/*.v)
-TB_SRCS  := $(wildcard testbench/*.v)
+RTL_SRCS := $(wildcard rtl/*.sv) $(wildcard rtl/**/*.sv)
+TB_SRCS  := $(wildcard testbench/*.sv)
 HDRS     := $(wildcard $(INC_DIR)/*.vh) $(wildcard rtl/**/*.vh)
 
 # Default Testbench Configurations
-DEFAULT_TB  := testbench/tb.v
+DEFAULT_TB  := testbench/tb.sv
 SIM_OUT     := $(OUTPUT_DIR)/test_sim.vvp
 DEFAULT_VCD := $(VCD_DIR)/default.vcd
 
@@ -74,7 +74,7 @@ sim: $(RTL_SRCS) $(DEFAULT_TB) $(HDRS) | $(OUTPUT_DIR) $(VCD_DIR)
 # Looks for testbench/tb_<name>.v first; falls back to testbench/<name>.v.
 # ------------------------------------------------------------------------------
 test_%: $(RTL_SRCS) $(HDRS) | $(OUTPUT_DIR) $(VCD_DIR)
-	@TB_FILE=$$( [ -f testbench/tb_$*.v ] && echo "testbench/tb_$*.v" || echo "testbench/$*.v" ); \
+	@TB_FILE=$$( [ -f testbench/tb_$*.sv ] && echo "testbench/tb_$*.sv" || echo "testbench/$*.sv" ); \
 	VCD_PATH="$(VCD_DIR)/$*.vcd"; \
 	echo "Compiling and running: $$TB_FILE -> $$VCD_PATH"; \
 	$(IVERILOG) $(FLAGS) -DVCD_FILE=\"$$VCD_PATH\" -o $(OUTPUT_DIR)/$*.vvp $(RTL_SRCS) $$TB_FILE && \
