@@ -109,7 +109,7 @@ sim: $(RTL_SRCS) $(DEFAULT_TB) $(HDRS) | $(OUTPUT_DIR) $(VCD_DIR) $(OBJ_DIR)
 # ------------------------------------------------------------------------------
 lint: $(RTL_SRCS) $(HDRS)
 	@echo "Running Verilator lint checks..."
-	$(VERILATOR) --lint-only -Wall -Wno-fatal -Irtl \
+	$(VERILATOR) -sv --lint-only --language 1800-2012 --Wall --Wno-fatal -Irtl \
 		-I$(INC_DIR) $(RTL_SRCS)
 
 # ------------------------------------------------------------------------------
