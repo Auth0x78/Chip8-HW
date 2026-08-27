@@ -68,7 +68,7 @@ VERILATOR_FLAGS := --cc -O3 --binary --trace --timing -Wall -Wno-UNUSED -Wno-WID
                    -DVCD_DIR=\"$(VCD_DIR)\" \
                    --top-module
 
-.PHONY: all help sim waves wave_% clean
+.PHONY: all help sim lint waves wave-% clean
 
 # Default target runs simulation
 all: sim
@@ -80,6 +80,7 @@ help:
 	@echo "Available Targets (Linux/WSL only):"
 	@echo "  make              : Compile & simulate default testbench ($(DEFAULT_TB))"
 	@echo "  make test_<name>  : Compile & simulate testbench/tb_<name>.sv"
+	@echo "  make lint         : Run Verilator lint checks only"
 	@echo "  make waves        : Open default waveform ($(DEFAULT_VCD)) in GTKWave"
 	@echo "  make wave_<name>  : Open specific waveform ($(VCD_DIR)/<name>.vcd) in GTKWave"
 	@echo "  make clean        : Delete '$(OUTPUT_DIR)' and '$(VCD_DIR)' directories"
@@ -102,6 +103,14 @@ sim: $(RTL_SRCS) $(DEFAULT_TB) $(HDRS) | $(OUTPUT_DIR) $(VCD_DIR) $(OBJ_DIR)
 		-o $(SIM_EXE)
 	@echo "Running simulation..."
 	$(SIM_EXE)
+
+# ------------------------------------------------------------------------------
+# Verilator Lint Check
+# ------------------------------------------------------------------------------
+lint: $(RTL_SRCS) $(HDRS)
+	@echo "Running Verilator lint checks..."
+	$(VERILATOR) --lint-only -Wall -Wno-fatal -Irtl \
+		-I$(INC_DIR) $(RTL_SRCS)
 
 # ------------------------------------------------------------------------------
 # Dynamic Pattern Rule for Specific Testbenches (e.g., make test_alu)
