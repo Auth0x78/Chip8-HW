@@ -119,7 +119,7 @@ module tb_alu;
     $display("          RUNNING ALU TESTBENCH (9 OPCODES)       ");
     $display("==================================================");
 
-    // 1. Directed Edge-Case Checks
+    // Directed Edge-Case Checks
     $display("--- Running Directed Edge Cases ---");
 
     // Test Subtraction Underflow Flag
@@ -141,7 +141,7 @@ module tb_alu;
 
     #5;
 
-    // 2. Randomized Test Stream
+    // Randomized Test Stream
     $display("--- Running 1000 Random Vector Iterations ---");
     for (i = 0; i < 1000; i = i + 1) begin
       Xin = $urandom_range(0, 255)[7:0];
