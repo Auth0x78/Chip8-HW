@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module dual_port_ram (
     // Inputs to double port ram
     input wire write_en,
