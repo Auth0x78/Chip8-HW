@@ -69,6 +69,9 @@ module tb_dual_port_ram;
 
   // Main Test Stimulus
   initial begin
+    // Local logic
+    logic [12:0] rand_addr;
+
     // Initialize inputs
     write_en = 0;
     high_en = 0;
@@ -105,8 +108,7 @@ module tb_dual_port_ram;
       $display("[FAIL]: 2 Byte write and word read | Expected = %0h Got = %0h", expected_data,
                rx_data);
     end
-
-
+    
     // Test 2: Read already written data as byte
     #5;
     read_data(12'hFFE, 0);
@@ -117,6 +119,27 @@ module tb_dual_port_ram;
       fail_count = fail_count + 1;
       $display("[FAIL]: Byte read already present data | Expected = ZZ%0b Got = %0b",
                expected_data[15:8], rx_data);
+    end
+
+    // Random Write and Read Tests
+    $display("--- Running Random Write and Read Tests ---");
+    for (i = 0; i < 100; i = i + 1) begin
+      expected_data = $urandom_range(0, 16'hFFFF);
+      rand_addr = $urandom_range(0, 12'hFFE);
+
+      write_data(rand_addr, expected_data[15:8]);
+      write_data(rand_addr, expected_data[7:0]);
+
+      #5;
+      read_data(rand_addr, 1);
+
+      if (rx_data == expected_data) begin
+        pass_count = pass_count + 1;
+      end else begin
+        fail_count = fail_count + 1;
+        $display("[FAIL]: Random Write and Read | Expected = %0h Got = %0h", expected_data,
+                 rx_data);
+      end
     end
 
     // Final Output Summary

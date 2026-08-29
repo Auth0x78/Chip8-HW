@@ -18,7 +18,7 @@ module dual_port_ram (
   assign internal_data = high_en ? {memory[address], memory[address+1]} : {8'hZZ, memory[address]};
 
   assign data_out = write_en ? 16'hZZZZ : internal_data;
-
+  
   always_latch begin
     if (write_en) begin
       memory[address] = data_in;
