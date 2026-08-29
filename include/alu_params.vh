@@ -1,3 +1,6 @@
+`ifndef ALU_PARAMS_VH
+`define ALU_PARAMS_VH
+
 localparam logic [3:0] ALU_SHIFT_RIGHT  = 4'h0;
 localparam logic [3:0] ALU_SHIFT_LEFT   = 4'h1;
 localparam logic [3:0] ALU_OR           = 4'h2;
@@ -7,3 +10,5 @@ localparam logic [3:0] ALU_ADD_XY       = 4'h5;
 localparam logic [3:0] ALU_SUB_XY       = 4'h6;
 localparam logic [3:0] ALU_SUB_YX       = 4'h7;
 localparam logic [3:0] ALU_ADD_RX       = 4'h8;
+
+`endif
