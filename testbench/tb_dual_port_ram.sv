@@ -70,7 +70,7 @@ module tb_dual_port_ram;
   // Main Test Stimulus
   initial begin
     // Local logic
-    logic [12:0] rand_addr;
+    logic [11:0] rand_addr;
 
     // Initialize inputs
     write_en = 0;
