@@ -2,154 +2,215 @@
 
 module tb_dual_port_ram;
 
-  // Inputs to DUT
-  reg write_en;
-  reg high_en;
+  // Port A: CPU master
+  reg        port_a_req;
+  reg        port_a_write_en;
+  reg [7:0]  port_a_data_in;
+  reg [11:0] port_a_address;
+  wire [7:0] port_a_data_out;
 
-  reg [7:0] data_in;
-  reg [11:0] address;
+  // Port B: GPU read-only slave
+  reg        port_b_req;
+  reg [11:0] port_b_address;
+  wire [7:0] port_b_data_out;
+  wire       port_b_ack;
 
-  // Outputs from DUT
-  wire [15:0] data_out;
-
-  // Reference Model Expected Values
-  reg [15:0] expected_data;
-  reg [15:0] rx_data;
-
-  // Counters
+  // Reference model and counters
+  reg [7:0] reference_memory [0:4095];
+  reg [7:0] expected_data;
   integer i;
   integer pass_count = 0;
   integer fail_count = 0;
 
-  // Instantiate Unit Under Test (DUT)
+  // Instantiate Unit Under Test
   dual_port_ram dut (
-      // Inputs to double port ram
-      .write_en(write_en),
-      .high_en (high_en),
-      .data_in (data_in),
-      .address (address),
-      // Output data lane
-      .data_out(data_out)
+      .port_a_req      (port_a_req),
+      .port_a_write_en (port_a_write_en),
+      .port_a_data_in  (port_a_data_in),
+      .port_a_address  (port_a_address),
+      .port_a_data_out (port_a_data_out),
+      .port_b_req      (port_b_req),
+      .port_b_address  (port_b_address),
+      .port_b_data_out (port_b_data_out),
+      .port_b_ack      (port_b_ack)
   );
 
-  // Reference model calculation task
-  task static write_data;
-    input [11:0] addr;
-    input [7:0] data;
+  task static check_condition;
+    input condition;
+    input string description;
     begin
-      data_in = data;
-      address = addr;
-      #1;  // Wait for data to reach the port and settle
-
-      write_en = 1;
-      #5;  // Wait for the write to actually happen
-
-      write_en = 0;
-      #1;  // Hold data for a while so that write_en settles to zero
-      data_in = 8'hZZ;
-      address = 12'hZZZ;
+      if (condition) begin
+        pass_count = pass_count + 1;
+      end
+      else begin
+        fail_count = fail_count + 1;
+        $display("[FAIL] %s", description);
+      end
     end
   endtask
 
-  task static read_data;
-    input [11:0] addr;
-    input highEn;
+  function [11:0] random_address_value;
     begin
-      write_en = 0;
-      address  = addr;
-      high_en  = highEn;
+      random_address_value = 12'($urandom());
+    end
+  endfunction
 
+  function [7:0] random_data_value;
+    begin
+      random_data_value = 8'($urandom());
+    end
+  endfunction
+
+  task static cpu_write;
+    input [11:0] addr;
+    input [7:0] data;
+    begin
+      port_a_req       = 1'b1;
+      port_a_write_en  = 1'b1;
+      port_a_address   = addr;
+      port_a_data_in   = data;
       #1;
-      rx_data = data_out;
-      #1;  // Wait for signals to settle and read to actually happen
-      address = 12'hZZZ;
-      high_en = 0;
+      check_condition(port_b_ack === 1'b0, "GPU was acknowledged during a CPU write");
+      reference_memory[addr] = data;
+      port_a_req       = 1'b0;
+      port_a_write_en  = 1'b0;
+      port_a_address   = 12'h000;
+      port_a_data_in   = 8'h00;
+      #1;
+    end
+  endtask
+
+  task static cpu_read;
+    input [11:0] addr;
+    begin
+      port_a_req       = 1'b1;
+      port_a_write_en  = 1'b0;
+      port_a_address   = addr;
+      #1;
+      check_condition(port_a_data_out === reference_memory[addr], "CPU read returned incorrect data");
+      port_a_req       = 1'b0;
+      port_a_address   = 12'h000;
+      #1;
+    end
+  endtask
+
+  task static gpu_read;
+    input [11:0] addr;
+    begin
+      port_b_req       = 1'b1;
+      port_b_address   = addr;
+      #1;
+      check_condition(port_b_ack === 1'b1, "GPU read was not acknowledged");
+      check_condition(port_b_data_out === reference_memory[addr], "GPU read returned incorrect data");
+      port_b_req       = 1'b0;
+      port_b_address   = 12'h000;
+      #1;
+    end
+  endtask
+
+  task static simultaneous_read;
+    input [11:0] cpu_addr;
+    input [11:0] gpu_addr;
+    begin
+      port_a_req       = 1'b1;
+      port_a_write_en  = 1'b0;
+      port_a_address   = cpu_addr;
+      port_b_req       = 1'b1;
+      port_b_address   = gpu_addr;
+      #1;
+      check_condition(port_b_ack === 1'b1, "GPU read was not acknowledged during simultaneous reads");
+      check_condition(port_a_data_out === reference_memory[cpu_addr], "CPU simultaneous read returned incorrect data");
+      check_condition(port_b_data_out === reference_memory[gpu_addr], "GPU simultaneous read returned incorrect data");
+      port_a_req       = 1'b0;
+      port_b_req       = 1'b0;
+      port_a_address   = 12'h000;
+      port_b_address   = 12'h000;
+      #1;
     end
   endtask
 
   // Main Test Stimulus
   initial begin
-    // Local logic
-    logic [11:0] rand_addr;
-
-    // Initialize inputs
-    write_en = 0;
-    high_en = 0;
-    data_in = 8'h00;
-    address = 12'h000;
-    expected_data = 16'h0000;
-    rx_data = 16'h0000;
-
-    // Setup GTKWave VCD dump files
     $dumpfile({`VCD_DIR, "/dual_port_ram.vcd"});
     $dumpvars(0, tb_dual_port_ram);
 
     for (i = 4090; i < 4096; i = i + 1) $dumpvars(0, dut.memory[i]);
 
+    // Initialize inputs. This RAM intentionally has no clock or reset port.
+    port_a_req       = 1'b0;
+    port_a_write_en  = 1'b0;
+    port_a_data_in   = 8'h00;
+    port_a_address   = 12'h000;
+    port_b_req       = 1'b0;
+    port_b_address   = 12'h000;
+
     $display("==================================================");
-    $display("          RUNNING 2 PORT RAM TESTBENCH            ");
+    $display("       RUNNING STATIC TRUE DUAL-PORT RAM TEST    ");
     $display("==================================================");
 
-    // Directed Edge-Case Checks
-    $display("--- Running Directed Edge Cases ---");
+    // Idle outputs and inactive acknowledgements.
+    #1;
+    check_condition(port_b_ack === 1'b0, "Port B acknowledged while idle");
+    check_condition(port_a_data_out === 8'h00, "Port A inactive data output was not zero");
+    check_condition(port_b_data_out === 8'h00, "Port B inactive data output was not zero");
 
-    // Test 1: Write data and read the data as word
-    expected_data = 16'hAA55;
-    write_data(12'hFFE, expected_data[15:8]);
-    write_data(12'hFFF, expected_data[7:0]);
+    // CPU writes and reads both legal boundary addresses.
+    cpu_write(12'h000, 8'hA5);
+    cpu_write(12'hFFF, 8'h5A);
+    cpu_read(12'h000);
+    cpu_read(12'hFFF);
 
-    #5;
-    read_data(12'hFFE, 1);
+    // GPU can read CPU-written data, but it has no write interface.
+    gpu_read(12'h000);
+    gpu_read(12'hFFF);
 
-    if (rx_data == expected_data) begin
-      pass_count = pass_count + 1;
-    end else begin
-      fail_count = fail_count + 1;
-      $display("[FAIL]: 2 Byte write and word read | Expected = %0h Got = %0h", expected_data,
-               rx_data);
-    end
-    
-    // Test 2: Read already written data as byte
-    #5;
-    read_data(12'hFFE, 0);
+    // Both read ports are acknowledged and return data in parallel.
+    simultaneous_read(12'h000, 12'hFFF);
+    simultaneous_read(12'hFFF, 12'hFFF);
 
-    if (rx_data[15:8] === 8'hZZ && rx_data[7:0] == expected_data[15:8]) begin
-      pass_count = pass_count + 1;
-    end else begin
-      fail_count = fail_count + 1;
-      $display("[FAIL]: Byte read already present data | Expected = ZZ%0b Got = %0b",
-               expected_data[15:8], rx_data);
-    end
+    // CPU write priority: GPU remains unacknowledged until the write request is
+    // released, then reads the value that the CPU has just written.
+    port_a_req       = 1'b1;
+    port_a_write_en  = 1'b1;
+    port_a_address   = 12'h123;
+    port_a_data_in   = 8'h3C;
+    port_b_req       = 1'b1;
+    port_b_address   = 12'h123;
+    #1;
+    check_condition(port_b_ack === 1'b0, "GPU read was acknowledged during CPU priority write");
+    reference_memory[12'h123] = 8'h3C;
+    port_a_req       = 1'b0;
+    port_a_write_en  = 1'b0;
+    port_a_address   = 12'h000;
+    #1;
+    check_condition(port_b_ack === 1'b1, "GPU read was not acknowledged after CPU write completed");
+    check_condition(port_b_data_out === 8'h3C, "GPU read did not see the completed CPU write");
+    port_b_req       = 1'b0;
+    port_b_address   = 12'h000;
+    #1;
 
-    // Random Write and Read Tests
-    $display("--- Running Random Write and Read Tests ---");
+    // Random CPU writes and reads exercise the full 12-bit address space.
     for (i = 0; i < 100; i = i + 1) begin
-      expected_data = $urandom_range(0, 16'hFFFF);
-      rand_addr = $urandom_range(0, 12'hFFE);
-
-      write_data(rand_addr, expected_data[15:8]);
-      write_data(rand_addr, expected_data[7:0]);
-
-      #5;
-      read_data(rand_addr, 1);
-
-      if (rx_data == expected_data) begin
-        pass_count = pass_count + 1;
-      end else begin
-        fail_count = fail_count + 1;
-        $display("[FAIL]: Random Write and Read | Expected = %0h Got = %0h", expected_data,
-                 rx_data);
-      end
+      expected_data = random_data_value();
+      cpu_write(random_address_value(), expected_data);
     end
 
-    // Final Output Summary
+    for (i = 0; i < 100; i = i + 1) begin
+      cpu_read(random_address_value());
+    end
+
     $display("==================================================");
     $display("RESULTS: %0d PASSED | %0d FAILED", pass_count, fail_count);
     $display("==================================================");
 
-    if (fail_count == 0) $display(">>> SUCCESS: All RAM tests passed! <<<");
-    else $display(">>> FAILURE: Output mismatches detected. <<<");
-
-    $finish;
+    if (fail_count == 0) begin
+      $display(">>> SUCCESS: All static true dual-port RAM tests passed! <<<");
+      $finish;
+    end
+    else begin
+      $display(">>> ERROR: RAM output or handshake mismatches detected. <<<");
+      $fatal(1, "Static true dual-port RAM testbench failed");
+    end
   end
+
 endmodule
