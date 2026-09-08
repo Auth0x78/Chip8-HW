@@ -1,24 +1,27 @@
-# Project Documentation
+# CHIP-8 Hardware Project Documentation
 
-This folder contains the main documentation for the CHIP-8 hardware project. The files are organized into small, easy-to-follow sections so that the design, setup, and current status are clear without needing to read the whole codebase at once.
+This documentation set describes the current direction of the project: a hardware-oriented CHIP-8 implementation in SystemVerilog, designed around modular verification and a future SoC-style architecture.
 
-## Documentation index
+## Documentation map
 
-- [Overview](overview.md) — what the project is and what it is trying to implement
-- [Build and Run](build-and-run.md) — required tools and commands to build simulations
-- [Architecture](architecture.md) — how the main RTL blocks connect and work together
-- [Progress Status](progress-status.md) — current implementation status and roadmap
-- [Next Steps](next_steps.md) — extended design plan and future work
+- [Overview](overview.md) — high-level summary of the project and current implementation stage
+- [Architecture](architecture.md) — top-level system organization and signal flow
+- [CPU](cpu.md) — execution model, control path, and CPU responsibilities
+- [PPU](ppu.md) — graphics pipeline, draw/clear behavior, framebuffer design, and VGA scanout
+- [Main Memory](main-memory.md) — memory ownership, access rules, and system-level device interaction
+- [Opcodes](opcodes.md) — complete CHIP-8 opcode reference
+- [Next Steps](next_steps.md) — project roadmap and future implementation plan
 
 ## Quick summary
 
-This project is a hardware-oriented CHIP-8 implementation written in SystemVerilog. It uses Verilator for simulation and focuses on verifying individual blocks like the ALU, decoder, register file, and RAM before moving toward a full CPU or SoC implementation.
+The repository already contains working RTL modules for the ALU, decoder, register file, and RAM prototype. The missing major step is the control unit and higher-level system integration, which is the focus of the architecture documented here.
 
 ```mermaid
 flowchart LR
-    A[SystemVerilog RTL] --> B[Verilator Simulation]
-    B --> C[Testbenches]
-    C --> D[Waveform Debugging]
-    D --> E[Module Validation]
-    E --> F[Testing using FPGA]
+    A[CHIP-8 CPU] --> B[Instruction Decode]
+    B --> C[Execute / Update State]
+    C --> D[Main Memory]
+    C --> E[GPU Command Queue]
+    E --> F[GPU + VRAM]
+    F --> G[VGA Output]
 ```
