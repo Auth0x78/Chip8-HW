@@ -1,7 +1,8 @@
 `timescale 1ns / 1ps
-`include "register_file_params.vh"
 
 module tb_register_file;
+
+  `include "register_file_params.vh"
 
   // Inputs to DUT
   reg clk;
