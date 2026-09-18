@@ -1,7 +1,8 @@
 `timescale 1ns / 1ps
-`include "alu_params.vh"
 
 module tb_alu;
+
+  `include "alu_params.vh"
 
   // Inputs to DUT
   reg [3:0] alu_op;
