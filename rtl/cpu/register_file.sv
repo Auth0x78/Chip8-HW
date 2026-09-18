@@ -5,18 +5,18 @@ module register_file (
     input wire rst,
 
     // Control / Write Signals
-    input wire       write_en,
-    input wire [3:0] vx_sel,        // Vx index
-    input wire [3:0] vy_sel,        // Vy index
-    input wire [1:0] write_dst_sel,
+    input wire write_en,
+    // Data bus (16 bit) will be mapped to Register[rd_addr_a] or {Vx, Vy}
+    input wire [4:0] addr_a,
+    input wire [3:0] rd_addr_reg_y,
+    input wire [2:0] write_dst_sel,
 
     // Input data to write to registers
     input wire [7:0] in_data_low,
     input wire [7:0] in_data_high,
 
     // Register Outputs
-    output wire [7:0] Vx,  // Vx
-    output wire [7:0] Vy,  // Vy
+    output wire [15:0] data_bus,  // {Vx, Vy} or Stack[sp] (low)
 
     // Special Registers
     output reg [15:0] I_reg,
@@ -28,9 +28,19 @@ module register_file (
 
   reg [7:0] V[16];
 
+  // CHIP 8 has a internal stack with each entry 16-bit wide and has total space for 16 x (16 bits)
+  reg [15:0] stack[16];
+
+  // Internal data address calculation wire
+  wire [3:0] sp_or_x;
+  assign sp_or_x = addr_a[3:0];
+
+  // Routed data
+  wire [15:0] routed_data;
+  assign routed_data = addr_a[4] ? stack[sp_or_x] : {V[sp_or_x], V[rd_addr_reg_y]};
+
   // Read Logic (Asynchronous)
-  assign Vx = write_en ? 8'hZZ : V[vx_sel];
-  assign Vy = write_en ? 8'hZZ : V[vy_sel];
+  assign data_bus = write_en ? 16'hZZZZ : routed_data;
 
   // Write Logic (Synchronous)
   always_ff @(posedge clk or posedge rst) begin
@@ -47,10 +57,14 @@ module register_file (
       ST_reg <= 8'h00;
     end else if (write_en) begin
       case (write_dst_sel)
-        RF_WRITE_V:  V[vx_sel] <= in_data_low;
-        RF_WRITE_I:  I_reg <= {in_data_high, in_data_low};
+        RF_WRITE_V: V[sp_or_x] <= in_data_low;
+        RF_WRITE_I: I_reg <= {in_data_high, in_data_low};
         RF_WRITE_DT: DT_reg <= in_data_low;
         RF_WRITE_ST: ST_reg <= in_data_low;
+        RF_WRITE_STACK: stack[sp_or_x] <= {in_data_high, in_data_low};
+        default: begin
+          // Do nothing
+        end
       endcase
     end
   end

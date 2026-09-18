@@ -10,7 +10,7 @@ module alu (
     output logic [7:0] A
 );
 
-  `include "alu_params.vh"
+`include "alu_params.vh"
 
   always_comb begin
     // Default assignments to prevent unintended latches

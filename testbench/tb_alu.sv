@@ -1,7 +1,8 @@
 `timescale 1ns / 1ps
-`include "alu_params.vh"
 
 module tb_alu;
+
+  `include "alu_params.vh"
 
   // Inputs to DUT
   reg [3:0] alu_op;
@@ -83,6 +84,32 @@ module tb_alu;
     end
   endtask
 
+  // Apply one directed vector and compare the DUT against the reference model.
+  task run_edge_case;
+    input [3:0] op;
+    input [7:0] x;
+    input [7:0] y;
+    input [15:0] r;
+    begin
+      alu_op = op;
+      Xin = x;
+      Yin = y;
+      Rin = r;
+      #5;
+      check_result(op, x, y, r);
+
+      if ((Z === expected_Z) && (A[0] === expected_A[0]) &&
+          ((op != ALU_ADD_RX) || (A === expected_A))) begin
+        pass_count = pass_count + 1;
+      end else begin
+        fail_count = fail_count + 1;
+        $display(
+            "[FAIL Edge] OP=4'h%0h | Xin=%h Yin=%h Rin=%h | Expected (Z=%h A=%h) Got (Z=%h A=%h)",
+            op, x, y, r, expected_Z, expected_A, Z, A);
+      end
+    end
+  endtask
+
   // Helper task to select opcode based on index
   task select_opcode;
     input [3:0] index;
@@ -119,29 +146,34 @@ module tb_alu;
     $display("          RUNNING ALU TESTBENCH (9 OPCODES)       ");
     $display("==================================================");
 
-    // 1. Directed Edge-Case Checks
-    $display("--- Running Directed Edge Cases ---");
+    // Directed Edge-Case Checks
+    $display("--- Running Directed Edge Cases (20 vectors) ---");
 
-    // Test Subtraction Underflow Flag
-    Xin = 8'h05;
-    Yin = 8'h0A;
-    alu_op = ALU_SUB_XY;
-    #5;
-    check_result(alu_op, Xin, Yin, Rin);
-    if (Z !== expected_Z || A[0] !== expected_A[0])
-      $display("[FAIL Directed] SUB_XY 5 - 10 | Got Z=%h A[0]=%b", Z, A[0]);
+    // ALU_ADD_RX: boundaries, byte transitions, and 16-bit overflow.
+    run_edge_case(ALU_ADD_RX, 8'h00, 8'h00, 16'h0000);
+    run_edge_case(ALU_ADD_RX, 8'hFF, 8'h00, 16'h0000);
+    run_edge_case(ALU_ADD_RX, 8'h01, 8'h00, 16'h00FF);
+    run_edge_case(ALU_ADD_RX, 8'hFF, 8'h00, 16'h0001);
+    run_edge_case(ALU_ADD_RX, 8'h00, 8'h00, 16'hFFFF);
+    run_edge_case(ALU_ADD_RX, 8'h01, 8'h00, 16'hFFFF);
+    run_edge_case(ALU_ADD_RX, 8'hFF, 8'h00, 16'hFF00);
+    run_edge_case(ALU_ADD_RX, 8'hFF, 8'h00, 16'h0100);
+    run_edge_case(ALU_ADD_RX, 8'h12, 8'h00, 16'hABCD);
+    run_edge_case(ALU_ADD_RX, 8'hFF, 8'h00, 16'hFFFF);
 
-    // Test Shift MSB flag
-    Xin = 8'h80;
-    alu_op = ALU_SHIFT_LEFT;
-    #5;
-    check_result(alu_op, Xin, Yin, Rin);
-    if (Z !== expected_Z || A[0] !== expected_A[0])
-      $display("[FAIL Directed] SHL 0x80 | Got Z=%h A[0]=%b", Z, A[0]);
+    // Other operations: zero/max values, equal operands, carries, and flags.
+    run_edge_case(ALU_SHIFT_RIGHT, 8'h01, 8'h00, 16'h0000);
+    run_edge_case(ALU_SHIFT_LEFT, 8'h80, 8'h00, 16'h0000);
+    run_edge_case(ALU_OR, 8'h00, 8'h00, 16'h0000);
+    run_edge_case(ALU_OR, 8'hAA, 8'h55, 16'h0000);
+    run_edge_case(ALU_AND, 8'hFF, 8'h0F, 16'h0000);
+    run_edge_case(ALU_XOR, 8'hFF, 8'hFF, 16'h0000);
+    run_edge_case(ALU_ADD_XY, 8'hFF, 8'h01, 16'h0000);
+    run_edge_case(ALU_SUB_XY, 8'h05, 8'h0A, 16'h0000);
+    run_edge_case(ALU_SUB_YX, 8'h0A, 8'h05, 16'h0000);
+    run_edge_case(4'h0, 8'hFF, 8'hFF, 16'hFFFF);
 
-    #5;
-
-    // 2. Randomized Test Stream
+    // Randomized Test Stream
     $display("--- Running 1000 Random Vector Iterations ---");
     for (i = 0; i < 1000; i = i + 1) begin
       Xin = $urandom_range(0, 255)[7:0];
