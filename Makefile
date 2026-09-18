@@ -38,9 +38,9 @@ OBJ_DIR    := $(OUTPUT_DIR)/obj
 INC_DIR    := include
 
 # Discover Source Files
-RTL_SRCS := $(wildcard rtl/*.sv) $(wildcard rtl/**/*.sv)
+RTL_SRCS := $(sort $(wildcard rtl/*.sv) $(wildcard rtl/*/*.sv) $(wildcard rtl/*/*/*.sv))
 TB_SRCS  := $(wildcard testbench/*.sv)
-HDRS     := $(wildcard $(INC_DIR)/*.vh) $(wildcard rtl/**/*.vh)
+HDRS     := $(sort $(wildcard $(INC_DIR)/*.vh) $(wildcard rtl/*.vh) $(wildcard rtl/*/*.vh))
 
 # Default Testbench Configurations
 DEFAULT_TB  := testbench/tb.sv
@@ -113,10 +113,15 @@ lint: $(RTL_SRCS) $(HDRS)
 		-I$(INC_DIR) $(RTL_SRCS)
 
 # ------------------------------------------------------------------------------
+# Run all testbenches
+# ------------------------------------------------------------------------------
+test: test_alu test_decoder test_dual_port_ram test_register_file test_timer_unit test_control_unit test_cpu
+
+# ------------------------------------------------------------------------------
 # Dynamic Pattern Rule for Specific Testbenches (e.g., make test_alu)
 # Looks for testbench/tb_<name>.sv
 # ------------------------------------------------------------------------------
-test-%: $(RTL_SRCS) $(HDRS) | $(OUTPUT_DIR) $(VCD_DIR) $(OBJ_DIR)
+test-% test_%: $(RTL_SRCS) $(HDRS) | $(OUTPUT_DIR) $(VCD_DIR) $(OBJ_DIR)
 	@TB_FILE=$$( [ -f testbench/tb_$*.sv ] && echo "testbench/tb_$*.sv" || echo "testbench/$*.sv" ); \
 	if [ ! -f "$$TB_FILE" ]; then \
 		echo "Error: Testbench not found: $$TB_FILE"; \
@@ -139,7 +144,7 @@ waves:
 	$(GTKWAVE) $(DEFAULT_VCD) &
 
 # Open a specific waveform: make wave_alu (opens waveforms/alu.vcd)
-wave-%:
+wave-% wave_%:
 	$(GTKWAVE) $(VCD_DIR)/$*.vcd &
 
 # ------------------------------------------------------------------------------
