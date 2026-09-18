@@ -1,7 +1,8 @@
 `timescale 1ns / 1ps
-`include "alu_params.vh"
 
 module tb_decoder;
+
+  `include "alu_params.vh"
 
   // Inputs to DUT
   reg [15:0] instr;
@@ -168,10 +169,11 @@ module tb_decoder;
       if (expected_br_jump || expected_br_call || expected_load_index_imm || expected_br_jump_v0_offset) begin
         expected_imm_addr = instruction[11:0];
       end else if (expected_br_skip_eq_imm || expected_br_skip_neq_imm || expected_load_x_imm ||
-                   expected_alu_and_rand_imm) begin
+                   expected_alu_x_imm_add || expected_alu_and_rand_imm) begin
         expected_reg_x_addr = instruction[11:8];
         expected_imm_data   = instruction[7:0];
-      end else if (expected_br_skip_eq_reg || expected_br_skip_neq_reg) begin
+      end else if (expected_br_skip_eq_reg || expected_br_skip_neq_reg ||
+                   expected_load_x_from_y || expected_alu_xy_op) begin
         expected_reg_x_addr = instruction[11:8];
         expected_reg_y_addr = instruction[7:4];
       end else if (expected_ky_skip_xkey_press || expected_ky_skip_xkey_notpress ||
@@ -202,9 +204,10 @@ module tb_decoder;
           ((expected_br_jump || expected_br_call || expected_load_index_imm || expected_br_jump_v0_offset) &&
            imm_addr !== expected_imm_addr) ||
           ((expected_br_skip_eq_imm || expected_br_skip_neq_imm || expected_load_x_imm ||
-            expected_alu_and_rand_imm) &&
+            expected_alu_x_imm_add || expected_alu_and_rand_imm) &&
            (reg_x_addr !== expected_reg_x_addr || imm_data !== expected_imm_data)) ||
-          ((expected_br_skip_eq_reg || expected_br_skip_neq_reg) &&
+          ((expected_br_skip_eq_reg || expected_br_skip_neq_reg ||
+            expected_load_x_from_y || expected_alu_xy_op) &&
            (reg_x_addr !== expected_reg_x_addr || reg_y_addr !== expected_reg_y_addr)) ||
           ((expected_ky_skip_xkey_press || expected_ky_skip_xkey_notpress || expected_read_vx_mem_i ||
             expected_store_V_reg || expected_store_bcd_of_x || expected_load_i_font ||
