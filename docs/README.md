@@ -10,6 +10,7 @@ This documentation set describes the current direction of the project: a hardwar
 - [PPU](ppu.md) — graphics pipeline, draw/clear behavior, framebuffer design, and VGA scanout
 - [Main Memory](main-memory.md) — memory ownership, access rules, and system-level device interaction
 - [Opcodes](opcodes.md) — complete CHIP-8 opcode reference
+- [Opcodes Checklist](opcodes_checklist.md) — complete implementation and test status checklist for all 35 opcodes
 - [Next Steps](next_steps.md) — project roadmap and future implementation plan
 
 ## Quick summary
