@@ -106,7 +106,7 @@ module cpu #(
       .rf_in_data_low  (rf_in_data_low),
       .rf_in_data_high (rf_in_data_high),
       .rf_data_bus     (rf_data_bus),
-      .rf_i_reg        (current_i),
+      .rf_i_reg        (rf_i_reg),
       .rf_dt_reg       (timer_dt_out),
       .alu_op_out      (alu_op),
       .alu_xin         (alu_xin),

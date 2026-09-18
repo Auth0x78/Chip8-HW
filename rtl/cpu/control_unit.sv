@@ -78,6 +78,8 @@ module control_unit #(
   reg        vf_pending;
   reg        vf_writing;
   reg [15:0] internal_mem_addr;
+  reg [ 7:0] internal_out_mem_data;
+  reg [ 7:0] internal_rf_in_data_low;
 
   // Status Monitors
   assign pc_monitor    = pc;
@@ -241,11 +243,25 @@ module control_unit #(
       end
     end
 
+    // Memory data routing
+    if (state == CU_STATE_STORE_REGS) begin
+      out_mem_data = vx_val;
+    end else begin
+      out_mem_data = internal_out_mem_data;
+    end
+
+    // RF input data routing
+    if (state == CU_STATE_LOAD_REGS) begin
+      rf_in_data_low = in_data[15:8];
+    end else begin
+      rf_in_data_low = internal_rf_in_data_low;
+    end
+
     // Memory address routing
-    if (mem_write_en) begin
-      mem_addr = internal_mem_addr;
-    end else if (state == CU_STATE_LOAD_REGS) begin
+    if (state == CU_STATE_STORE_REGS || state == CU_STATE_LOAD_REGS) begin
       mem_addr = rf_i_reg + {12'h0, sub_cnt};
+    end else if (mem_write_en) begin
+      mem_addr = internal_mem_addr;
     end else begin
       mem_addr = pc;
     end
@@ -264,15 +280,15 @@ module control_unit #(
       bcd_o            <= 8'h00;
       vf_pending       <= 1'b0;
 
-      internal_mem_addr <= 16'h0000;
-      out_mem_data     <= 8'h00;
-      mem_write_en     <= 1'b0;
-      mem_req          <= 1'b0;
+      internal_mem_addr     <= 16'h0000;
+      internal_out_mem_data <= 8'h00;
+      mem_write_en          <= 1'b0;
+      mem_req               <= 1'b0;
 
-      rf_write_en      <= 1'b0;
-      rf_write_dst_sel <= RF_WRITE_V;
-      rf_in_data_low   <= 8'h00;
-      rf_in_data_high  <= 8'h00;
+      rf_write_en           <= 1'b0;
+      rf_write_dst_sel      <= RF_WRITE_V;
+      internal_rf_in_data_low <= 8'h00;
+      rf_in_data_high       <= 8'h00;
 
       dt_write_en      <= 1'b0;
       dt_write_val     <= 8'h00;
@@ -330,7 +346,7 @@ module control_unit #(
             rf_write_en      <= 1'b1;
             rf_write_dst_sel <= RF_WRITE_STACK;
             rf_in_data_high  <= pc_plus_2[15:8];
-            rf_in_data_low   <= pc_plus_2[7:0];
+            internal_rf_in_data_low <= pc_plus_2[7:0];
             sp               <= sp + 8'd1;
             pc               <= {4'h0, imm_addr};
             state            <= CU_STATE_FETCH;
@@ -358,7 +374,7 @@ module control_unit #(
           else if (load_x_imm) begin
             rf_write_en      <= 1'b1;
             rf_write_dst_sel <= RF_WRITE_V;
-            rf_in_data_low   <= imm_data;
+            internal_rf_in_data_low <= imm_data;
             pc               <= pc + 16'd2;
             state            <= CU_STATE_FETCH;
           end
@@ -367,7 +383,7 @@ module control_unit #(
           else if (alu_x_imm_add) begin
             rf_write_en      <= 1'b1;
             rf_write_dst_sel <= RF_WRITE_V;
-            rf_in_data_low   <= vx_val + imm_data;
+            internal_rf_in_data_low <= vx_val + imm_data;
             pc               <= pc + 16'd2;
             state            <= CU_STATE_FETCH;
           end
@@ -376,7 +392,7 @@ module control_unit #(
           else if (load_x_from_y) begin
             rf_write_en      <= 1'b1;
             rf_write_dst_sel <= RF_WRITE_V;
-            rf_in_data_low   <= vy_val;
+            internal_rf_in_data_low <= vy_val;
             pc               <= pc + 16'd2;
             state            <= CU_STATE_FETCH;
           end
@@ -385,7 +401,7 @@ module control_unit #(
           else if (alu_xy_op) begin
             rf_write_en      <= 1'b1;
             rf_write_dst_sel <= RF_WRITE_V;
-            rf_in_data_low   <= alu_result;
+            internal_rf_in_data_low <= alu_result;
 
             if (reg_x_addr != 4'hF) begin
               vf_pending <= alu_vf[0];
@@ -407,7 +423,7 @@ module control_unit #(
             rf_write_en      <= 1'b1;
             rf_write_dst_sel <= RF_WRITE_I;
             rf_in_data_high  <= {4'h0, imm_addr[11:8]};
-            rf_in_data_low   <= imm_addr[7:0];
+            internal_rf_in_data_low <= imm_addr[7:0];
             pc               <= pc + 16'd2;
             state            <= CU_STATE_FETCH;
           end
@@ -422,7 +438,7 @@ module control_unit #(
           else if (alu_and_rand_imm) begin
             rf_write_en      <= 1'b1;
             rf_write_dst_sel <= RF_WRITE_V;
-            rf_in_data_low   <= rand_data & imm_data;
+            internal_rf_in_data_low <= rand_data & imm_data;
             pc               <= pc + 16'd2;
             state            <= CU_STATE_FETCH;
           end
@@ -453,7 +469,7 @@ module control_unit #(
           else if (load_vx_dt) begin
             rf_write_en      <= 1'b1;
             rf_write_dst_sel <= RF_WRITE_V;
-            rf_in_data_low   <= rf_dt_reg;
+            internal_rf_in_data_low <= rf_dt_reg;
             pc               <= pc + 16'd2;
             state            <= CU_STATE_FETCH;
           end
@@ -463,7 +479,7 @@ module control_unit #(
             if (any_key_pressed) begin
               rf_write_en      <= 1'b1;
               rf_write_dst_sel <= RF_WRITE_V;
-              rf_in_data_low   <= {4'h0, pressed_key_id};
+              internal_rf_in_data_low <= {4'h0, pressed_key_id};
               pc               <= pc + 16'd2;
               state            <= CU_STATE_FETCH;
             end else begin
@@ -492,7 +508,7 @@ module control_unit #(
             rf_write_en      <= 1'b1;
             rf_write_dst_sel <= RF_WRITE_I;
             rf_in_data_high  <= i_plus_vx[15:8];
-            rf_in_data_low   <= i_plus_vx[7:0];
+            internal_rf_in_data_low <= i_plus_vx[7:0];
             pc               <= pc + 16'd2;
             state            <= CU_STATE_FETCH;
           end
@@ -502,7 +518,7 @@ module control_unit #(
             rf_write_en      <= 1'b1;
             rf_write_dst_sel <= RF_WRITE_I;
             rf_in_data_high  <= font_addr_calc[15:8];
-            rf_in_data_low   <= font_addr_calc[7:0];
+            internal_rf_in_data_low <= font_addr_calc[7:0];
             pc               <= pc + 16'd2;
             state            <= CU_STATE_FETCH;
           end
@@ -518,14 +534,19 @@ module control_unit #(
 
           // 26. Store V0..Vx to memory at I (Fx55)
           else if (store_V_reg) begin
-            sub_cnt <= 4'd0;
-            state   <= CU_STATE_STORE_REGS;
+            mem_req      <= 1'b1;
+            mem_write_en <= 1'b1;
+            sub_cnt      <= 4'd0;
+            state        <= CU_STATE_STORE_REGS;
           end
 
           // 27. Read V0..Vx from memory at I (Fx65)
           else if (read_vx_mem_i) begin
-            sub_cnt <= 4'd0;
-            state   <= CU_STATE_LOAD_REGS;
+            mem_req          <= 1'b1;
+            rf_write_en      <= 1'b1;
+            rf_write_dst_sel <= RF_WRITE_V;
+            sub_cnt          <= 4'd0;
+            state            <= CU_STATE_LOAD_REGS;
           end
 
           // Default / Unknown opcode: advance PC
@@ -541,7 +562,7 @@ module control_unit #(
         CU_STATE_ALU_VF_WRITE: begin
           rf_write_en      <= 1'b1;
           rf_write_dst_sel <= RF_WRITE_V;
-          rf_in_data_low   <= {7'h0, vf_pending};
+          internal_rf_in_data_low <= {7'h0, vf_pending};
           vf_writing       <= 1'b1;
           pc               <= pc + 16'd2;
           state            <= CU_STATE_FETCH;
@@ -555,20 +576,20 @@ module control_unit #(
           mem_write_en <= 1'b1;
           case (sub_cnt)
             4'd0: begin
-              internal_mem_addr <= rf_i_reg;
-              out_mem_data      <= bcd_h;
-              sub_cnt           <= 4'd1;
+              internal_mem_addr     <= rf_i_reg;
+              internal_out_mem_data <= bcd_h;
+              sub_cnt               <= 4'd1;
             end
             4'd1: begin
-              internal_mem_addr <= rf_i_reg + 16'd1;
-              out_mem_data      <= bcd_t;
-              sub_cnt           <= 4'd2;
+              internal_mem_addr     <= rf_i_reg + 16'd1;
+              internal_out_mem_data <= bcd_t;
+              sub_cnt               <= 4'd2;
             end
             4'd2: begin
-              internal_mem_addr <= rf_i_reg + 16'd2;
-              out_mem_data      <= bcd_o;
-              pc                <= pc + 16'd2;
-              state             <= CU_STATE_FETCH;
+              internal_mem_addr     <= rf_i_reg + 16'd2;
+              internal_out_mem_data <= bcd_o;
+              pc                    <= pc + 16'd2;
+              state                 <= CU_STATE_FETCH;
             end
             default: state <= CU_STATE_FETCH;
           endcase
@@ -578,14 +599,13 @@ module control_unit #(
         // STORE REGS (Fx55): Multi-cycle write of V0..Vx
         // ---------------------------------------------------------------------
         CU_STATE_STORE_REGS: begin
-          mem_req           <= 1'b1;
-          mem_write_en      <= 1'b1;
-          internal_mem_addr <= rf_i_reg + {12'h0, sub_cnt};
-          out_mem_data      <= vx_val;
+          mem_req      <= 1'b1;
+          mem_write_en <= 1'b1;
 
           if (sub_cnt == reg_x_addr) begin
-            pc    <= pc + 16'd2;
-            state <= CU_STATE_FETCH;
+            pc           <= pc + 16'd2;
+            state        <= CU_STATE_FETCH;
+            mem_write_en <= 1'b0;
           end else begin
             sub_cnt <= sub_cnt + 4'd1;
           end
@@ -596,15 +616,13 @@ module control_unit #(
         // ---------------------------------------------------------------------
         CU_STATE_LOAD_REGS: begin
           mem_req          <= 1'b1;
-          mem_write_en     <= 1'b0;
-
           rf_write_en      <= 1'b1;
           rf_write_dst_sel <= RF_WRITE_V;
-          rf_in_data_low   <= in_data[15:8];
 
           if (sub_cnt == reg_x_addr) begin
-            pc    <= pc + 16'd2;
-            state <= CU_STATE_FETCH;
+            pc          <= pc + 16'd2;
+            state       <= CU_STATE_FETCH;
+            rf_write_en <= 1'b0;
           end else begin
             sub_cnt <= sub_cnt + 4'd1;
           end
@@ -617,7 +635,7 @@ module control_unit #(
           if (any_key_pressed) begin
             rf_write_en      <= 1'b1;
             rf_write_dst_sel <= RF_WRITE_V;
-            rf_in_data_low   <= {4'h0, pressed_key_id};
+            internal_rf_in_data_low <= {4'h0, pressed_key_id};
             pc               <= pc + 16'd2;
             state            <= CU_STATE_FETCH;
           end

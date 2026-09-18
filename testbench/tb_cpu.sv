@@ -162,8 +162,128 @@ module tb_cpu;
     load_instruction(12'h21C, 16'h00E0);
     // 0x21E: D015 -> DRW V0, V1, 5 (Draw sprite GPU command)
     load_instruction(12'h21E, 16'hD015);
-    // 0x220: 1220 -> JP 0x220 (Infinite loop / Halt)
-    load_instruction(12'h220, 16'h1220);
+
+    // -------------------------------------------------------------------------
+    // Phase 2: Test remaining opcodes
+    // -------------------------------------------------------------------------
+    // 0x220: 700A -> ADD V0, 0x0A (V0 = 8 + 10 = 18 = 0x12)
+    load_instruction(12'h220, 16'h700A);
+    // 0x222: 8600 -> LD V6, V0 (V6 = 0x12)
+    load_instruction(12'h222, 16'h8600);
+    // 0x224: 670F -> LD V7, 0x0F
+    load_instruction(12'h224, 16'h670F);
+    // 0x226: 8671 -> OR V6, V7 (V6 = 0x12 | 0x0F = 0x1F, VF = 0)
+    load_instruction(12'h226, 16'h8671);
+    // 0x228: 6833 -> LD V8, 0x33
+    load_instruction(12'h228, 16'h6833);
+    // 0x22A: 8682 -> AND V6, V8 (V6 = 0x1F & 0x33 = 0x13, VF = 0)
+    load_instruction(12'h22A, 16'h8682);
+    // 0x22C: 6955 -> LD V9, 0x55
+    load_instruction(12'h22C, 16'h6955);
+    // 0x22E: 8693 -> XOR V6, V9 (V6 = 0x13 ^ 0x55 = 0x46, VF = 0)
+    load_instruction(12'h22E, 16'h8693);
+    // 0x230: 6A20 -> LD VA, 0x20
+    load_instruction(12'h230, 16'h6A20);
+    // 0x232: 6B10 -> LD VB, 0x10
+    load_instruction(12'h232, 16'h6B10);
+    // 0x234: 8AB5 -> SUB VA, VB (VA = 0x20 - 0x10 = 0x10, VF = 1)
+    load_instruction(12'h234, 16'h8AB5);
+    // 0x236: 6C07 -> LD VC, 0x07
+    load_instruction(12'h236, 16'h6C07);
+    // 0x238: 8C06 -> SHR VC (VC = 0x07 >> 1 = 0x03, VF = 1)
+    load_instruction(12'h238, 16'h8C06);
+    // 0x23A: 6D05 -> LD VD, 0x05
+    load_instruction(12'h23A, 16'h6D05);
+    // 0x23C: 6E0C -> LD VE, 0x0C
+    load_instruction(12'h23C, 16'h6E0C);
+    // 0x23E: 8DE7 -> SUBN VD, VE (VD = VE - VD = 0x0C - 0x05 = 0x07, VF = 1)
+    load_instruction(12'h23E, 16'h8DE7);
+    // 0x240: 8DEE -> SHL VD (VD = 0x07 << 1 = 0x0E, VF = 0)
+    load_instruction(12'h240, 16'h8DEE);
+    // 0x242: 4D99 -> SNE VD, 0x99 (VD=0x0E != 0x99 -> skip taken, skips 0x244)
+    load_instruction(12'h242, 16'h4D99);
+    // 0x244: 1999 -> Trap (Must be skipped)
+    load_instruction(12'h244, 16'h1999);
+    // 0x246: 4D0E -> SNE VD, 0x0E (VD=0x0E == 0x0E -> skip not taken, goes to 0x248)
+    load_instruction(12'h246, 16'h4D0E);
+    // 0x248: 610E -> LD V1, 0x0E
+    load_instruction(12'h248, 16'h610E);
+    // 0x24A: 51D0 -> SE V1, VD (V1 == VD -> skip taken, skips 0x24C)
+    load_instruction(12'h24A, 16'h51D0);
+    // 0x24C: 1999 -> Trap (Must be skipped)
+    load_instruction(12'h24C, 16'h1999);
+    // 0x24E: 51A0 -> SE V1, VA (V1 != VA -> skip not taken, goes to 0x250)
+    load_instruction(12'h24E, 16'h51A0);
+    // 0x250: 91A0 -> SNE V1, VA (V1 != VA -> skip taken, skips 0x252)
+    load_instruction(12'h250, 16'h91A0);
+    // 0x252: 1999 -> Trap (Must be skipped)
+    load_instruction(12'h252, 16'h1999);
+    // 0x254: 91D0 -> SNE V1, VD (V1 == VD -> skip not taken, goes to 0x256)
+    load_instruction(12'h254, 16'h91D0);
+    // 0x256: C00F -> RND V0, 0x0F
+    load_instruction(12'h256, 16'hC00F);
+    // 0x258: A500 -> LD I, 0x500
+    load_instruction(12'h258, 16'hA500);
+    // 0x25A: 6120 -> LD V1, 0x20
+    load_instruction(12'h25A, 16'h6120);
+    // 0x25C: F11E -> ADD I, V1 (I becomes 0x520)
+    load_instruction(12'h25C, 16'hF11E);
+    // 0x25E: 6105 -> LD V1, 0x05
+    load_instruction(12'h25E, 16'h6105);
+    // 0x260: F129 -> LD F, V1 (I becomes 0x0050 + 5*5 = 0x0069)
+    load_instruction(12'h260, 16'hF129);
+    // 0x262: A700 -> LD I, 0x700
+    load_instruction(12'h262, 16'hA700);
+    // 0x264: 6011 -> LD V0, 0x11
+    load_instruction(12'h264, 16'h6011);
+    // 0x266: 6122 -> LD V1, 0x22
+    load_instruction(12'h266, 16'h6122);
+    // 0x268: 6233 -> LD V2, 0x33
+    load_instruction(12'h268, 16'h6233);
+    // 0x26A: 6344 -> LD V3, 0x44
+    load_instruction(12'h26A, 16'h6344);
+    // 0x26C: F355 -> LD [I], V3 (stores V0..V3 to ram[0x700..0x703])
+    load_instruction(12'h26C, 16'hF355);
+    // 0x26E: 6000 -> LD V0, 0x00
+    load_instruction(12'h26E, 16'h6000);
+    // 0x270: 6100 -> LD V1, 0x00
+    load_instruction(12'h270, 16'h6100);
+    // 0x272: 6200 -> LD V2, 0x00
+    load_instruction(12'h272, 16'h6200);
+    // 0x274: 6300 -> LD V3, 0x00
+    load_instruction(12'h274, 16'h6300);
+    // 0x276: F365 -> LD V3, [I] (loads ram[0x700..0x703] back into V0..V3)
+    load_instruction(12'h276, 16'hF365);
+    // 0x278: F407 -> LD V4, DT (read delay timer into V4)
+    load_instruction(12'h278, 16'hF407);
+    // 0x27A: 6503 -> LD V5, 0x03
+    load_instruction(12'h27A, 16'h6503);
+    // 0x27C: E59E -> SKP V5 (skip if key 3 is pressed)
+    load_instruction(12'h27C, 16'hE59E);
+    // 0x27E: 1999 -> Trap (Must be skipped)
+    load_instruction(12'h27E, 16'h1999);
+    // 0x280: E5A1 -> SKNP V5 (skip if key 3 is NOT pressed)
+    load_instruction(12'h280, 16'hE5A1);
+    // 0x282: E5A1 -> SKNP V5 (skip if key 3 is NOT pressed)
+    load_instruction(12'h282, 16'hE5A1);
+    // 0x284: 1999 -> Trap (Must be skipped)
+    load_instruction(12'h284, 16'h1999);
+    // 0x286: E59E -> SKP V5 (skip if key 3 is pressed)
+    load_instruction(12'h286, 16'hE59E);
+    // 0x288: F60A -> LD V6, K (wait for keypress)
+    load_instruction(12'h288, 16'hF60A);
+    // 0x28A: 6004 -> LD V0, 0x04
+    load_instruction(12'h28A, 16'h6004);
+    // 0x28C: B290 -> JP V0, 0x290 (PC = 0x290 + 0x04 = 0x294)
+    load_instruction(12'h28C, 16'hB290);
+    // 0x28E: 1999 -> Trap
+    load_instruction(12'h28E, 16'h1999);
+    // 0x290: 1999 -> Trap
+    load_instruction(12'h290, 16'h1999);
+    // 0x292: 1999 -> Trap
+    load_instruction(12'h292, 16'h1999);
+    // 0x294: 1294 -> JP 0x294 (Infinite loop / Halt)
+    load_instruction(12'h294, 16'h1294);
 
     #20;
     @(negedge clk);
@@ -340,6 +460,376 @@ module tb_cpu;
     end else begin
       fail_count = fail_count + 1;
       $display("[FAIL] D015: PC=0x%0h", pc_out);
+    end
+
+    // =========================================================================
+    // PHASE 2: Verification of remaining opcodes
+    // =========================================================================
+
+    // 19. 700A: ADD V0, 0x0A (V0 was 8; 8 + 10 = 18 = 0x12)
+    step_cycles(2);
+    step_cycles(1); // FETCH of 8600 commits V0 = 0x12
+    if (pc_out === 16'h0222 && uut.u_register_file.V[0] === 8'h12) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] 700A ADD V0, 0x0A: V0=0x%0h, PC=0x%0h", uut.u_register_file.V[0], pc_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] 700A ADD V0, 0x0A: V0=0x%0h (exp 0x12), PC=0x%0h", uut.u_register_file.V[0], pc_out);
+    end
+
+    // 20. 8600: LD V6, V0 (V6 = 0x12)
+    step_cycles(1); // DECODE_EXEC of 8600
+    step_cycles(1); // FETCH of 670F commits V6 = 0x12
+    if (pc_out === 16'h0224 && uut.u_register_file.V[6] === 8'h12) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] 8600 LD V6, V0: V6=0x%0h, PC=0x%0h", uut.u_register_file.V[6], pc_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] 8600 LD V6, V0: V6=0x%0h (exp 0x12), PC=0x%0h", uut.u_register_file.V[6], pc_out);
+    end
+
+    // 21. 670F: LD V7, 0x0F
+    step_cycles(1); // DECODE_EXEC of 670F
+
+    // 22. 8671: OR V6, V7 (0x12 | 0x0F = 0x1F, VF=0)
+    step_cycles(3); // FETCH, EXEC, ALU_VF_WRITE
+    step_cycles(1); // FETCH of 6833 commits V6 and VF
+    if (pc_out === 16'h0228 && uut.u_register_file.V[6] === 8'h1F && uut.u_register_file.V[15] === 8'h00) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] 8671 OR V6, V7: V6=0x%0h, VF=0x%0h", uut.u_register_file.V[6], uut.u_register_file.V[15]);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] 8671 OR V6, V7: V6=0x%0h (exp 0x1F), VF=0x%0h (exp 0)", uut.u_register_file.V[6], uut.u_register_file.V[15]);
+    end
+
+    // 23. 6833: LD V8, 0x33
+    step_cycles(1); // DECODE_EXEC of 6833
+
+    // 24. 8682: AND V6, V8 (0x1F & 0x33 = 0x13, VF=0)
+    step_cycles(3); // FETCH, EXEC, ALU_VF_WRITE
+    step_cycles(1); // FETCH of 6955 commits V6 and VF
+    if (pc_out === 16'h022C && uut.u_register_file.V[6] === 8'h13 && uut.u_register_file.V[15] === 8'h00) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] 8682 AND V6, V8: V6=0x%0h, VF=0x%0h", uut.u_register_file.V[6], uut.u_register_file.V[15]);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] 8682 AND V6, V8: V6=0x%0h (exp 0x13), VF=0x%0h (exp 0)", uut.u_register_file.V[6], uut.u_register_file.V[15]);
+    end
+
+    // 25. 6955: LD V9, 0x55
+    step_cycles(1); // DECODE_EXEC of 6955
+
+    // 26. 8693: XOR V6, V9 (0x13 ^ 0x55 = 0x46, VF=0)
+    step_cycles(3); // FETCH, EXEC, ALU_VF_WRITE
+    step_cycles(1); // FETCH of 6A20 commits V6 and VF
+    if (pc_out === 16'h0230 && uut.u_register_file.V[6] === 8'h46 && uut.u_register_file.V[15] === 8'h00) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] 8693 XOR V6, V9: V6=0x%0h, VF=0x%0h", uut.u_register_file.V[6], uut.u_register_file.V[15]);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] 8693 XOR V6, V9: V6=0x%0h (exp 0x46), VF=0x%0h (exp 0)", uut.u_register_file.V[6], uut.u_register_file.V[15]);
+    end
+
+    // 27. 6A20: LD VA, 0x20
+    step_cycles(1); // DECODE_EXEC of 6A20
+    // 28. 6B10: LD VB, 0x10
+    step_cycles(2); // FETCH + DECODE_EXEC of 6B10
+
+    // 29. 8AB5: SUB VA, VB (0x20 - 0x10 = 0x10, VF=1 no borrow)
+    step_cycles(3); // FETCH, EXEC, ALU_VF_WRITE
+    step_cycles(1); // FETCH of 6C07 commits VA and VF
+    if (pc_out === 16'h0236 && uut.u_register_file.V[10] === 8'h10 && uut.u_register_file.V[15] === 8'h01) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] 8AB5 SUB VA, VB: VA=0x%0h, VF=0x%0h", uut.u_register_file.V[10], uut.u_register_file.V[15]);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] 8AB5 SUB VA, VB: VA=0x%0h (exp 0x10), VF=0x%0h (exp 1)", uut.u_register_file.V[10], uut.u_register_file.V[15]);
+    end
+
+    // 30. 6C07: LD VC, 0x07
+    step_cycles(1); // DECODE_EXEC of 6C07
+
+    // 31. 8C06: SHR VC (0x07 >> 1 = 0x03, VF=1 LSB)
+    step_cycles(3); // FETCH, EXEC, ALU_VF_WRITE
+    step_cycles(1); // FETCH of 6D05 commits VC and VF
+    if (pc_out === 16'h023A && uut.u_register_file.V[12] === 8'h03 && uut.u_register_file.V[15] === 8'h01) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] 8C06 SHR VC: VC=0x%0h, VF=0x%0h", uut.u_register_file.V[12], uut.u_register_file.V[15]);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] 8C06 SHR VC: VC=0x%0h (exp 0x03), VF=0x%0h (exp 1)", uut.u_register_file.V[12], uut.u_register_file.V[15]);
+    end
+
+    // 32. 6D05: LD VD, 0x05
+    step_cycles(1); // DECODE_EXEC of 6D05
+    // 33. 6E0C: LD VE, 0x0C
+    step_cycles(2); // FETCH + DECODE_EXEC of 6E0C
+
+    // 34. 8DE7: SUBN VD, VE (VE - VD = 0x0C - 0x05 = 0x07, VF=1 no borrow)
+    step_cycles(3); // FETCH, EXEC, ALU_VF_WRITE
+    step_cycles(1); // FETCH of 8DEE commits VD and VF
+    if (pc_out === 16'h0240 && uut.u_register_file.V[13] === 8'h07 && uut.u_register_file.V[15] === 8'h01) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] 8DE7 SUBN VD, VE: VD=0x%0h, VF=0x%0h", uut.u_register_file.V[13], uut.u_register_file.V[15]);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] 8DE7 SUBN VD, VE: VD=0x%0h (exp 0x07), VF=0x%0h (exp 1)", uut.u_register_file.V[13], uut.u_register_file.V[15]);
+    end
+
+    // 35. 8DEE: SHL VD (0x07 << 1 = 0x0E, VF=0 MSB)
+    step_cycles(2); // EXEC of 8DEE, ALU_VF_WRITE
+    step_cycles(1); // FETCH of 4D99 commits VD and VF
+    if (pc_out === 16'h0242 && uut.u_register_file.V[13] === 8'h0E && uut.u_register_file.V[15] === 8'h00) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] 8DEE SHL VD: VD=0x%0h, VF=0x%0h", uut.u_register_file.V[13], uut.u_register_file.V[15]);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] 8DEE SHL VD: VD=0x%0h (exp 0x0E), VF=0x%0h (exp 0), PC=0x%0h", uut.u_register_file.V[13], uut.u_register_file.V[15], pc_out);
+    end
+
+    // 36. 4D99: SNE VD, 0x99 (VD=0x0E != 0x99 -> skip taken, skips 0x244, lands on 0x246)
+    step_cycles(1); // DECODE_EXEC of 4D99
+    if (pc_out === 16'h0246) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] 4D99 SNE taken: PC=0x%0h (skipped 0x0244)", pc_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] 4D99 SNE taken: PC=0x%0h (exp 0x0246)", pc_out);
+    end
+
+    // 37. 4D0E: SNE VD, 0x0E (VD=0x0E == 0x0E -> skip not taken, lands on 0x248)
+    step_cycles(2); // FETCH + DECODE_EXEC of 4D0E
+    if (pc_out === 16'h0248) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] 4D0E SNE not taken: PC=0x%0h", pc_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] 4D0E SNE not taken: PC=0x%0h (exp 0x0248)", pc_out);
+    end
+
+    // 38. 610E: LD V1, 0x0E
+    step_cycles(2);
+
+    // 39. 51D0: SE V1, VD (V1=0x0E == VD=0x0E -> skip taken, skips 0x24C, lands on 0x24E)
+    step_cycles(2);
+    if (pc_out === 16'h024E) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] 51D0 SE taken: PC=0x%0h (skipped 0x024C)", pc_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] 51D0 SE taken: PC=0x%0h (exp 0x024E)", pc_out);
+    end
+
+    // 40. 51A0: SE V1, VA (V1=0x0E != VA=0x10 -> skip not taken, lands on 0x250)
+    step_cycles(2);
+    if (pc_out === 16'h0250) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] 51A0 SE not taken: PC=0x%0h", pc_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] 51A0 SE not taken: PC=0x%0h (exp 0x0250)", pc_out);
+    end
+
+    // 41. 91A0: SNE V1, VA (V1=0x0E != VA=0x10 -> skip taken, skips 0x252, lands on 0x254)
+    step_cycles(2);
+    if (pc_out === 16'h0254) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] 91A0 SNE taken: PC=0x%0h (skipped 0x0252)", pc_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] 91A0 SNE taken: PC=0x%0h (exp 0x0254)", pc_out);
+    end
+
+    // 42. 91D0: SNE V1, VD (V1=0x0E == VD=0x0E -> skip not taken, lands on 0x256)
+    step_cycles(2);
+    if (pc_out === 16'h0256) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] 91D0 SNE not taken: PC=0x%0h", pc_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] 91D0 SNE not taken: PC=0x%0h (exp 0x0256)", pc_out);
+    end
+
+    // 43. C00F: RND V0, 0x0F (V0 = rand & 0x0F)
+    step_cycles(2); // FETCH + DECODE_EXEC
+    step_cycles(1); // FETCH of A500 commits V0
+    if (pc_out === 16'h0258 && (uut.u_register_file.V[0] & 8'hF0) === 8'h00) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] C00F RND V0, 0x0F: V0=0x%0h", uut.u_register_file.V[0]);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] C00F RND V0: V0=0x%0h", uut.u_register_file.V[0]);
+    end
+
+    // 44. A500: LD I, 0x500
+    step_cycles(1); // DECODE_EXEC of A500
+    // 45. 6120: LD V1, 0x20
+    step_cycles(2);
+
+    // 46. F11E: ADD I, V1 (I becomes 0x500 + 0x20 = 0x520)
+    step_cycles(2);
+    if (pc_out === 16'h025E && i_out === 16'h0520) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] F11E ADD I, V1: I=0x%0h", i_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] F11E ADD I, V1: I=0x%0h (exp 0x0520)", i_out);
+    end
+
+    // 47. 6105: LD V1, 0x05
+    step_cycles(2);
+
+    // 48. F129: LD F, V1 (I becomes 0x0050 + 5*5 = 0x0069)
+    step_cycles(2);
+    if (pc_out === 16'h0262 && i_out === 16'h0069) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] F129 LD F, V1: I=0x%0h", i_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] F129 LD F, V1: I=0x%0h (exp 0x0069)", i_out);
+    end
+
+    // 49. Set up registers for FX55: I=0x700, V0=0x11, V1=0x22, V2=0x33, V3=0x44
+    step_cycles(2); // A700
+    step_cycles(2); // 6011
+    step_cycles(2); // 6122
+    step_cycles(2); // 6233
+    step_cycles(2); // 6344
+
+    // 50. F355: Store V0..V3 to RAM at 0x700
+    while (pc_out !== 16'h026E) begin
+      step_cycles(1);
+    end
+    if (ram[12'h700] === 8'h11 && ram[12'h701] === 8'h22 &&
+        ram[12'h702] === 8'h33 && ram[12'h703] === 8'h44) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] F355 Store V0..V3: ram[0x700..703] = {%0h, %0h, %0h, %0h}",
+               ram[12'h700], ram[12'h701], ram[12'h702], ram[12'h703]);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] F355 Store V0..V3: ram[0x700..703] = {%0h, %0h, %0h, %0h}",
+               ram[12'h700], ram[12'h701], ram[12'h702], ram[12'h703]);
+    end
+
+    // 51. Zero out V0..V3:
+    step_cycles(2); // 6000
+    step_cycles(2); // 6100
+    step_cycles(2); // 6200
+    step_cycles(2); // 6300
+
+    // 52. F365: Load V0..V3 from RAM at 0x700
+    while (pc_out !== 16'h0278) begin
+      step_cycles(1);
+    end
+    step_cycles(1); // FETCH of F407 commits V3
+    if (uut.u_register_file.V[0] === 8'h11 && uut.u_register_file.V[1] === 8'h22 &&
+        uut.u_register_file.V[2] === 8'h33 && uut.u_register_file.V[3] === 8'h44) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] F365 Load V0..V3: V0..V3 = {%0h, %0h, %0h, %0h}",
+               uut.u_register_file.V[0], uut.u_register_file.V[1], uut.u_register_file.V[2], uut.u_register_file.V[3]);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] F365 Load V0..V3: V0..V3 = {%0h, %0h, %0h, %0h}",
+               uut.u_register_file.V[0], uut.u_register_file.V[1], uut.u_register_file.V[2], uut.u_register_file.V[3]);
+    end
+
+    // 53. F407: LD V4, DT (read active delay timer into V4)
+    step_cycles(1); // DECODE_EXEC of F407
+    step_cycles(1); // FETCH of 6503 commits V4
+    if (pc_out === 16'h027A && uut.u_register_file.V[4] > 8'h00) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] F407 LD V4, DT: V4=0x%0h", uut.u_register_file.V[4]);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] F407 LD V4, DT: V4=0x%0h (exp > 0)", uut.u_register_file.V[4]);
+    end
+
+    // 54. 6503: LD V5, 0x03 (key index = 3)
+    step_cycles(1); // DECODE_EXEC of 6503
+
+    // Assert key 3
+    key_state = 16'h0008;
+
+    // 55. E59E: SKP V5 (Key 3 pressed -> skip taken, lands on 0x280)
+    step_cycles(2);
+    if (pc_out === 16'h0280) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] E59E SKP taken (key 3 pressed): PC=0x%0h", pc_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] E59E SKP taken: PC=0x%0h (exp 0x0280)", pc_out);
+    end
+
+    // 56. E5A1: SKNP V5 (Key 3 IS pressed -> skip not taken, lands on 0x282)
+    step_cycles(2);
+    if (pc_out === 16'h0282) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] E5A1 SKNP not taken (key 3 pressed): PC=0x%0h", pc_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] E5A1 SKNP not taken: PC=0x%0h (exp 0x0282)", pc_out);
+    end
+
+    // Release key 3
+    key_state = 16'h0000;
+
+    // 57. E5A1: SKNP V5 (Key 3 NOT pressed -> skip taken, lands on 0x286)
+    step_cycles(2);
+    if (pc_out === 16'h0286) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] E5A1 SKNP taken (key 3 released): PC=0x%0h", pc_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] E5A1 SKNP taken: PC=0x%0h (exp 0x0286)", pc_out);
+    end
+
+    // 58. E59E: SKP V5 (Key 3 NOT pressed -> skip not taken, lands on 0x288)
+    step_cycles(2);
+    if (pc_out === 16'h0288) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] E59E SKP not taken (key 3 released): PC=0x%0h", pc_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] E59E SKP not taken: PC=0x%0h (exp 0x0288)", pc_out);
+    end
+
+    // 59. F60A: LD V6, K (wait for keypress)
+    step_cycles(2);
+    if (state_out === 3'd5) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] F60A entered CU_STATE_KEY_WAIT (state=5, PC=0x%0h)", pc_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] F60A state=0x%0d (exp 5)", state_out);
+    end
+
+    // Stall in KEY_WAIT
+    step_cycles(2);
+
+    // Press key 6 (bit 6 = 1)
+    key_state = 16'h0040;
+    step_cycles(1);
+    key_state = 16'h0000;
+    step_cycles(1); // FETCH of 6004 commits V6
+    if (pc_out === 16'h028A && uut.u_register_file.V[6] === 8'h06) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] F60A Key Pressed: V6=0x%0h, PC=0x%0h", uut.u_register_file.V[6], pc_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] F60A Key Pressed: V6=0x%0h (exp 0x06), PC=0x%0h", uut.u_register_file.V[6], pc_out);
+    end
+
+    // 60. 6004: LD V0, 0x04
+    step_cycles(1); // DECODE_EXEC of 6004
+
+    // 61. B290: JP V0, 0x290 (PC = 0x290 + 0x04 = 0x294)
+    step_cycles(2);
+    if (pc_out === 16'h0294) begin
+      pass_count = pass_count + 1;
+      $display("[PASS] B290 JP V0, 0x290: PC=0x%0h (0x290 + V0)", pc_out);
+    end else begin
+      fail_count = fail_count + 1;
+      $display("[FAIL] B290 JP V0, 0x290: PC=0x%0h (exp 0x0294)", pc_out);
     end
 
     // Final Output Summary
